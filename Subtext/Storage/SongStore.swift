@@ -42,9 +42,11 @@ final class SongStore {
         try? FileManager.default.removeItem(at: file(for: key))
     }
 
+    /// Removes saved translations and answers; lyrics and history stay.
     func clearTranslations() {
-        for var record in records.values where record.translation != nil {
+        for var record in records.values where record.translation != nil || record.questions != nil {
             record.translation = nil
+            record.questions = nil
             save(record)
         }
     }

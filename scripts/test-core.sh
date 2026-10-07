@@ -8,7 +8,9 @@ xcrun --sdk macosx swiftc -o "$out" \
   Subtext/Models/Models.swift \
   Subtext/Lyrics/LRCParser.swift \
   Subtext/Lyrics/LyricsService.swift \
+  Subtext/Translate/ClaudeAPI.swift \
   Subtext/Translate/ClaudeTranslator.swift \
+  Subtext/Translate/LinePrompt.swift \
   Subtext/Translate/LanguageTools.swift \
   Subtext/Storage/Prefs.swift \
   Subtext/Storage/Keychain.swift \

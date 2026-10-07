@@ -16,6 +16,7 @@ On your phone the app is called **Subtext**.
 - **A translation under every line.** Use Apple's translator, which runs on the phone, is free and covers about 20 languages. Or use Claude, which covers almost any language and gives natural meanings.
 - **Pronunciation in English letters** for Hindi, Punjabi, Korean, Japanese, Chinese, Russian, Arabic and other scripts.
 - **Notes on idioms, slang and cultural references**, plus a short "What it's about" summary of the song (Claude).
+- **Ask about any line.** Ask Claude what a word means, why it's said that way, or what it refers to, then ask follow-ups. Answers are saved with the song.
 - **Lyrics on the Lock Screen.** A Live Activity shows the line being sung and its translation, and updates as the song plays.
 - **Songs outside Spotify.** A Shazam shortcut opens any song playing nearby in SubText.
 - **Search and paste.** Find any song by name, or paste lyrics the database doesn't have. Timed LRC lyrics work too.
@@ -149,6 +150,19 @@ The lyrics appear, the current line is highlighted, and the list follows the son
 - **Translate into:** English by default. You can change it in Settings.
 - **Tap any line** to see it larger with its note, play along from there, or copy it.
 
+### Ask about a line
+
+To open a line's sheet, do any of these:
+- Tap the line.
+- Long-press the line and choose **Ask about this line**.
+- Tap **Ask** at the bottom of the screen to ask about the line playing now.
+
+In the sheet, pick a ready-made question ("Explain it word by word", "What does it really mean?", "Any slang or references?", "Explain the grammar", "How do I pronounce it?") or type your own. The answer appears as it's written, in the language you translate into, and you can ask follow-ups.
+
+- **Needs:** a Claude key.
+- **Cost:** about a cent or less per question.
+- **Saving:** answers are saved with the song, so opening the line again shows them for free.
+
 ### Lyrics on the Lock Screen
 
 This is on by default; the switch is Settings → **Lyrics on the Lock Screen**. While a song plays, the Lock Screen shows the current line, how it sounds and its translation, with a progress bar.
@@ -172,14 +186,14 @@ Shazam listens through the microphone, so it works best when music plays out lou
 
 - **Search** (magnifying glass): find a song by title and artist.
 - **Paste lyrics** (⋯ menu): add lyrics for the current song or a new one. Timed LRC lines like `[01:02.30] …` scroll with the song.
-- **History:** every song you've opened, with its translation saved. Swipe a song to delete it. To remove all saved translations, use Settings → **Clear saved translations**.
+- **History:** every song you've opened, with its translation and answers saved. Swipe a song to delete it. To remove all saved translations and answers, use Settings → **Clear saved translations and answers**.
 
 ## Privacy
 
 - **Spotify:** SubText asks Spotify only what's playing. It uses the `user-read-currently-playing` and `user-read-playback-state` permissions. Sign-in uses PKCE, and the sign-in token is kept in the iPhone's keychain.
 - **LRCLIB:** receives the song's title, artist, album and length to find its lyrics.
 - **Apple's translator:** runs on the phone and sends nothing.
-- **Claude (only if you add a key):** the song's title, artist and lyric lines are sent to Anthropic's API.
+- **Claude (only if you add a key):** the song's title, artist and lyric lines are sent to Anthropic's API. When you ask about a line, Anthropic receives that line, the three lines either side of it, the song's summary and your question.
 - **Everything else stays on the phone:** saved songs, translations and settings. There are no analytics and no SubText server.
 
 ## Limitations
@@ -214,7 +228,8 @@ Subtext/            the app
                     Lock Screen controller, background audio
   Lyrics/           LRCLIB client, LRC parser
   Spotify/          PKCE sign-in, currently-playing API
-  Translate/        Claude streaming translator, language detection, romanization
+  Translate/        Claude API client, streaming translator, "ask about a line", language detection,
+                    romanization
   Storage/          settings, keychain, saved songs (one JSON file per song)
   Intents/          the "Show Lyrics" Shortcuts action
   Views/            Now, History, Settings, search, paste, line details
@@ -239,6 +254,7 @@ scripts/            test-core.sh
   ```
 
   - `SUBTEXT_DEMO_TAB=settings` or `history` opens a tab.
+  - `SUBTEXT_DEMO_ASK="question"` with `SUBTEXT_DEMO_ASK_LINE=3` opens that line's sheet and asks the question.
   - `SUBTEXT_CLAUDE_URL` and `SUBTEXT_CLAUDE_KEY` point translations at a test server.
   - Apple's translator doesn't run in the simulator; use a real iPhone for that.
 

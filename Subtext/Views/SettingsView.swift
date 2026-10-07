@@ -35,7 +35,7 @@ struct SettingsView: View {
                     Text("For music from other apps or playing around you: one tap runs Shazam and opens the song here.")
                 }
                 Section("Saved data") {
-                    Button("Clear saved translations", role: .destructive) { confirmClear = true }
+                    Button("Clear saved translations and answers", role: .destructive) { confirmClear = true }
                 }
                 Section {
                     LabeledContent("Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "–")
@@ -43,8 +43,8 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
-            .confirmationDialog("Clear every saved translation?", isPresented: $confirmClear, titleVisibility: .visible) {
-                Button("Clear translations", role: .destructive) { model.clearSavedTranslations() }
+            .confirmationDialog("Clear every saved translation and answer?", isPresented: $confirmClear, titleVisibility: .visible) {
+                Button("Clear translations and answers", role: .destructive) { model.clearSavedTranslations() }
             } message: {
                 Text("Lyrics and history stay. Songs are translated again the next time you open them.")
             }
@@ -132,7 +132,7 @@ struct SettingsView: View {
         } header: {
             Text("Claude")
         } footer: {
-            Text("\(claudeModel.detail) Each song is translated once and saved, so replaying it costs nothing. Get a key at console.anthropic.com; it stays in this iPhone's keychain.")
+            Text("\(claudeModel.detail) Each song is translated once and saved, so replaying it costs nothing. Asking about a line costs about a cent or less per question. Get a key at console.anthropic.com; it stays in this iPhone's keychain.")
         }
     }
 

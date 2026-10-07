@@ -106,6 +106,14 @@ struct SongTranslation: Codable, Hashable {
     var complete = false
 }
 
+/// A question the user asked about a line, with Claude's answer.
+struct LineQuestion: Codable, Hashable, Identifiable {
+    var id = UUID()
+    var question: String
+    var answer: String
+    var date = Date()
+}
+
 struct SongRecord: Codable, Identifiable, Hashable {
     var id: String { track.key }
     var track: Track
@@ -114,4 +122,6 @@ struct SongRecord: Codable, Identifiable, Hashable {
     var lyricsChecked: Date?
     var translation: SongTranslation?
     var lastOpened: Date
+    /// Questions asked about lines, by line id. Optional so songs saved by earlier versions still load.
+    var questions: [Int: [LineQuestion]]?
 }

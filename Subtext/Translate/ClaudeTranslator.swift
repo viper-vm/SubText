@@ -1,24 +1,5 @@
 import Foundation
 
-enum TranslateError: LocalizedError {
-    case api(Int, String)
-    case refused
-    case truncated
-    case badResponse
-
-    var errorDescription: String? {
-        switch self {
-        case .api(401, _): "Claude rejected the API key. Check it in Settings."
-        case .api(402, let message), .api(403, let message): "Claude refused the request: \(message)"
-        case .api(429, _): "Claude is busy or your usage limit was reached. Try again in a minute."
-        case .api(let code, let message): "Claude error \(code): \(message)"
-        case .refused: "Claude declined to translate this song."
-        case .truncated: "The translation was cut off. Try again, or pick a different model."
-        case .badResponse: "Claude's reply couldn't be read."
-        }
-    }
-}
-
 /// Streams a line-by-line translation from Claude so lines appear as they arrive.
 struct ClaudeTranslator {
     enum Event: Equatable {
@@ -32,10 +13,28 @@ struct ClaudeTranslator {
     let targetName: String
 
     func stream(track: Track, lines: [LyricLine]) -> AsyncThrowingStream<Event, Error> {
-        AsyncThrowingStream { continuation in
+        let request: URLRequest
+        do {
+            request = try ClaudeAPI.request(
+                apiKey: apiKey, model: model, system: Self.systemPrompt(target: targetName),
+                turns: [ClaudeTurn(role: .user, text: Self.userPrompt(track: track, lines: lines, target: targetName))],
+                maxTokens: 16000)
+        } catch {
+            return AsyncThrowingStream { $0.finish(throwing: error) }
+        }
+        return AsyncThrowingStream { continuation in
             let task = Task.detached {
                 do {
-                    try await run(track: track, lines: lines) { continuation.yield($0) }
+                    var buffer = ""
+                    for try await text in ClaudeAPI.streamText(request) {
+                        buffer += text
+                        while let newline = buffer.firstIndex(of: "\n") {
+                            let row = String(buffer[..<newline])
+                            buffer.removeSubrange(...newline)
+                            if let event = Self.parse(row) { continuation.yield(event) }
+                        }
+                    }
+                    if let event = Self.parse(buffer) { continuation.yield(event) }
                     continuation.finish()
                 } catch {
                     continuation.finish(throwing: error)
@@ -43,85 +42,6 @@ struct ClaudeTranslator {
             }
             continuation.onTermination = { _ in task.cancel() }
         }
-    }
-
-    private static var endpoint: URL {
-        #if DEBUG
-        if let override = ProcessInfo.processInfo.environment["SUBTEXT_CLAUDE_URL"], let url = URL(string: override) {
-            return url
-        }
-        #endif
-        return URL(string: "https://api.anthropic.com/v1/messages")!
-    }
-
-    private func run(track: Track, lines: [LyricLine], emit: (Event) -> Void) async throws {
-        var request = URLRequest(url: Self.endpoint)
-        request.httpMethod = "POST"
-        request.timeoutInterval = 300
-        request.setValue("application/json", forHTTPHeaderField: "content-type")
-        request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
-        request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
-
-        var body: [String: Any] = [
-            "model": model.rawValue,
-            "max_tokens": 16000,
-            "stream": true,
-            "system": Self.systemPrompt(target: targetName),
-            "messages": [["role": "user", "content": Self.userPrompt(track: track, lines: lines, target: targetName)]],
-        ]
-        switch model {
-        case .opus, .sonnet:
-            // Translation needs little reasoning; low effort keeps it quick and cheap.
-            body["output_config"] = ["effort": "low"]
-            // If a safety classifier declines, the API retries on Anthropic's recommended fallback model.
-            body["fallbacks"] = "default"
-            request.setValue("server-side-fallback-2026-07-01", forHTTPHeaderField: "anthropic-beta")
-        case .haiku:
-            break
-        }
-        request.httpBody = try JSONSerialization.data(withJSONObject: body)
-
-        let (bytes, response) = try await URLSession.shared.bytes(for: request)
-        guard let http = response as? HTTPURLResponse else { throw TranslateError.badResponse }
-        guard http.statusCode == 200 else {
-            var data = Data()
-            for try await byte in bytes { data.append(byte) }
-            throw TranslateError.api(http.statusCode, Self.errorMessage(data))
-        }
-
-        var buffer = ""
-        var stopReason: String?
-        for try await line in bytes.lines {
-            guard line.hasPrefix("data:") else { continue }
-            let payload = line.dropFirst(5).trimmingCharacters(in: .whitespaces)
-            guard let data = payload.data(using: .utf8),
-                  let event = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let type = event["type"] as? String else { continue }
-
-            switch type {
-            case "content_block_delta":
-                guard let delta = event["delta"] as? [String: Any], delta["type"] as? String == "text_delta",
-                      let text = delta["text"] as? String else { continue }
-                buffer += text
-                while let newline = buffer.firstIndex(of: "\n") {
-                    let row = String(buffer[..<newline])
-                    buffer.removeSubrange(...newline)
-                    if let parsed = Self.parse(row) { emit(parsed) }
-                }
-            case "message_delta":
-                if let delta = event["delta"] as? [String: Any], let reason = delta["stop_reason"] as? String {
-                    stopReason = reason
-                }
-            case "error":
-                let error = event["error"] as? [String: Any]
-                throw TranslateError.api(0, error?["message"] as? String ?? "Unknown error")
-            default:
-                break
-            }
-        }
-        if let parsed = Self.parse(buffer) { emit(parsed) }
-        if stopReason == "refusal" { throw TranslateError.refused }
-        if stopReason == "max_tokens" { throw TranslateError.truncated }
     }
 
     // MARK: - Prompt
@@ -179,13 +99,5 @@ struct ClaudeTranslator {
         default:
             return nil
         }
-    }
-
-    static func errorMessage(_ data: Data) -> String {
-        if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           let error = json["error"] as? [String: Any], let message = error["message"] as? String {
-            return message
-        }
-        return String(data: data, encoding: .utf8).map { String($0.prefix(200)) } ?? "Unknown error"
     }
 }

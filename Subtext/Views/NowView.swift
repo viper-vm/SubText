@@ -1,5 +1,6 @@
 import AuthenticationServices
 import SwiftUI
+import UIKit
 
 struct NowView: View {
     @Environment(AppModel.self) private var model
@@ -64,6 +65,8 @@ struct SongView: View {
     @AppStorage(Prefs.Key.showNotes) private var showNotes = true
     @State private var autoFollow = true
     @State private var detail: LyricLine?
+    @State private var detailAsks = false
+    @State private var detailQuestion: String?
 
     private static let anchor = UnitPoint(x: 0.5, y: 0.32)
 
@@ -86,7 +89,21 @@ struct SongView: View {
                                         showRoman: showRoman, showTranslation: showTranslation, showNotes: showNotes)
                                     .id(line.id)
                                     .contentShape(Rectangle())
-                                    .onTapGesture { if !line.isBreak { detail = line } }
+                                    .onTapGesture { if !line.isBreak { open(line, asking: false) } }
+                                    .contextMenu {
+                                        if !line.isBreak {
+                                            Button { open(line, asking: true) } label: {
+                                                Label("Ask about this line", systemImage: "questionmark.bubble")
+                                            }
+                                            Button {
+                                                let translation = record.translation?.glosses[line.id]?.translation
+                                                UIPasteboard.general.string = [line.text, translation].compactMap { $0 }
+                                                    .filter { !$0.isEmpty }.joined(separator: "\n")
+                                            } label: {
+                                                Label("Copy", systemImage: "doc.on.doc")
+                                            }
+                                        }
+                                    }
                             }
                         }
                         Text("Lyrics from LRCLIB")
@@ -115,9 +132,20 @@ struct SongView: View {
                 }
             }
         }
-        .sheet(item: $detail) { line in
-            LineDetailSheet(line: line, record: record)
+        .onChange(of: model.detailRequest) { _, request in
+            guard let request, let line = record.lyrics?.lines.first(where: { $0.id == request.lineID }) else { return }
+            model.detailRequest = nil
+            open(line, asking: request.ask, question: request.question)
         }
+        .sheet(item: $detail) { line in
+            LineDetailSheet(line: line, record: record, startAsking: detailAsks, autoQuestion: detailQuestion)
+        }
+    }
+
+    private func open(_ line: LyricLine, asking: Bool, question: String? = nil) {
+        detailAsks = asking
+        detailQuestion = question
+        detail = line
     }
 
     private func state(of line: LyricLine) -> LineRow.LineState {
@@ -344,6 +372,12 @@ struct PlaybackBar: View {
                     scrollTo(line)
                 } label: {
                     Label("Current line", systemImage: "arrow.down.to.line")
+                }
+            }
+            if let line = model.currentLine,
+               model.record?.lyrics?.lines.first(where: { $0.id == line })?.isBreak == false {
+                Button { model.requestDetail(lineID: line, ask: true) } label: {
+                    Label("Ask", systemImage: "questionmark.bubble")
                 }
             }
             if !model.following, model.record?.lyrics?.synced == true {

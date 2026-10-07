@@ -68,6 +68,15 @@ final class AppModel {
     private(set) var isPlayingAlong = false
     /// Drives `.translationTask` on the root view (Apple's translator only runs inside a view).
     var appleConfig: TranslationSession.Configuration?
+    /// Asks the song screen to open a line's sheet (from the Ask button, a long press, or a test hook).
+    var detailRequest: DetailRequest?
+
+    struct DetailRequest: Equatable {
+        let id = UUID()
+        let lineID: Int
+        let ask: Bool
+        let question: String?
+    }
 
     let spotify = SpotifyAuth()
     let store = SongStore()
@@ -466,7 +475,31 @@ final class AppModel {
     func clearSavedTranslations() {
         store.clearTranslations()
         record?.translation = nil
+        record?.questions = nil
         translateIfNeeded(force: false)
+    }
+
+    // MARK: - Asking about a line
+
+    func requestDetail(lineID: Int, ask: Bool, question: String? = nil) {
+        selectedTab = .now
+        detailRequest = DetailRequest(lineID: lineID, ask: ask, question: question)
+    }
+
+    func saveQuestion(_ entry: LineQuestion, lineID: Int, songKey: String) {
+        func add(to saved: inout SongRecord) {
+            var all = saved.questions ?? [:]
+            all[lineID, default: []].append(entry)
+            saved.questions = all
+        }
+        if var current = record, current.id == songKey {
+            add(to: &current)
+            record = current
+            store.save(current)
+        } else if var saved = store.get(songKey) {
+            add(to: &saved)
+            store.save(saved)
+        }
     }
 
     // MARK: - Line highlight
@@ -576,6 +609,11 @@ final class AppModel {
                let line = record?.lyrics?.lines.first(where: { $0.id >= index && !$0.isBreak }) {
                 startPlayAlong(from: line)
             }
+        }
+        if let question = env["SUBTEXT_DEMO_ASK"], let lineText = env["SUBTEXT_DEMO_ASK_LINE"], let index = Int(lineText),
+           let line = record?.lyrics?.lines.first(where: { $0.id >= index && !$0.isBreak }) {
+            try? await Task.sleep(for: .seconds(1))
+            requestDetail(lineID: line.id, ask: true, question: question)
         }
         switch env["SUBTEXT_DEMO_TAB"] {
         case "settings": selectedTab = .settings

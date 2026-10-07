@@ -92,5 +92,38 @@ check("italian untouched", itOK?.code == "it", "\(String(describing: itOK))")
 let enOK = LanguageTools.detect(lines("I walked along the river\nthinking of the summer days\nwhen the main road was empty"))
 check("english untouched", enOK?.code == "en", "\(String(describing: enOK))")
 
+
+// 7. Asking about a line (made-up lines)
+let qaLines = (0..<10).map { LyricLine(id: $0, time: Double($0), text: "line number \($0)") }
+let qaLyrics = Lyrics(lines: qaLines, synced: true)
+let qaTrack = Track(title: "Test Song", artist: "Test Artist", primaryArtist: "Test Artist")
+let first = LinePrompt.firstMessage(track: qaTrack, lyrics: qaLyrics, line: qaLines[5], translation: "a translation",
+                                    about: "A test song.", question: "What does it mean?")
+check("ask: marks the line", first.contains("» line number 5\n"), first)
+check("ask: three lines each side", first.contains("  line number 2\n") && first.contains("  line number 8\n")
+      && !first.contains("line number 1\n") && !first.contains("line number 9\n"), first)
+check("ask: carries translation, summary and question", first.contains("a translation") && first.contains("A test song.")
+      && first.hasSuffix("My question: What does it mean?"))
+let edge = LinePrompt.firstMessage(track: qaTrack, lyrics: qaLyrics, line: qaLines[0], translation: nil, about: nil, question: "Q")
+check("ask: window clamps at the start", edge.contains("» line number 0\n") && edge.contains("  line number 3\n"), edge)
+let history = [LineQuestion(question: "Q1", answer: "A1"), LineQuestion(question: "Q2", answer: "A2")]
+let turns = LinePrompt.turns(history: history, newQuestion: "Q3") { "CONTEXT+" + $0 }
+check("ask: follow-up turns", turns.map(\.role) == [.user, .assistant, .user, .assistant, .user]
+      && turns.map(\.text) == ["CONTEXT+Q1", "A1", "Q2", "A2", "Q3"], "\(turns)")
+check("ask: first question", LinePrompt.turns(history: [], newQuestion: "Q") { "C+" + $0 }.map(\.text) == ["C+Q"])
+
+// 8. Request shape per model
+func body(_ r: URLRequest) -> [String: Any] { (try? JSONSerialization.jsonObject(with: r.httpBody ?? Data())) as? [String: Any] ?? [:] }
+let opus = try ClaudeAPI.request(apiKey: "k", model: .opus, system: "s", turns: turns, maxTokens: 4000)
+let ob = body(opus)
+check("request: opus shape", ob["model"] as? String == "claude-opus-5-5" && ob["stream"] as? Bool == true
+      && ob["fallbacks"] as? String == "default" && (ob["output_config"] as? [String: String])?["effort"] == "low"
+      && opus.value(forHTTPHeaderField: "anthropic-beta") == "server-side-fallback-2026-07-01"
+      && opus.value(forHTTPHeaderField: "anthropic-version") == "2023-06-01"
+      && (ob["messages"] as? [[String: String]])?.count == 5, "\(ob)")
+let haiku = body(try ClaudeAPI.request(apiKey: "k", model: .haiku, system: "s", turns: turns, maxTokens: 4000))
+check("request: haiku has no effort or fallbacks", haiku["fallbacks"] == nil && haiku["output_config"] == nil
+      && haiku["model"] as? String == "claude-haiku-4-5")
+
 print(failures == 0 ? "ALL PASSED" : "\(failures) FAILED")
 exit(failures == 0 ? 0 : 1)
