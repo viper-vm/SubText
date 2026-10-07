@@ -246,3 +246,7 @@ scripts/            test-core.sh
 
 - Lyrics from [LRCLIB](https://lrclib.net).
 - Translations by Apple's Translation framework and by [Claude](https://www.anthropic.com/claude) from Anthropic.
+
+## License
+
+MIT. See [LICENSE](LICENSE). The license covers SubText's code. The lyrics the app shows come from LRCLIB and belong to their rights holders.
