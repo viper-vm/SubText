@@ -1,0 +1,10 @@
+// Copy this file to Config/Local.xcconfig and fill in your values. Local.xcconfig is not committed.
+
+// Client ID of your app at developer.spotify.com/dashboard (redirect URI: subtext://callback).
+SPOTIFY_CLIENT_ID = paste-your-client-id-here
+
+// Your Apple developer team ID. A free Apple ID works; see "Find your team ID" in the README.
+DEVELOPMENT_TEAM = ABCDE12345
+
+// A reverse-domain prefix that is unique to you. The app's bundle ID becomes <prefix>.subtext.
+BUNDLE_ID_PREFIX = com.yourname

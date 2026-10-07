@@ -1,0 +1,433 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		5A0000000000000000000021 /* SubtextWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5A0000000000000000000022 /* SubtextWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		5A0000000000000000000023 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5A0000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5A0000000000000000000024;
+			remoteInfo = SubtextWidgetsExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		5A0000000000000000000020 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				5A0000000000000000000021 /* SubtextWidgetsExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		5A0000000000000000000030 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
+		5A0000000000000000000004 /* Subtext.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Subtext.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5A0000000000000000000022 /* SubtextWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SubtextWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		5A0000000000000000000005 /* Subtext */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Subtext;
+			sourceTree = "<group>";
+		};
+		5A000000000000000000002A /* SubtextWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SubtextWidgets;
+			sourceTree = "<group>";
+		};
+		5A000000000000000000002B /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Shared;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		5A0000000000000000000008 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5A0000000000000000000028 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		5A0000000000000000000002 = {
+			isa = PBXGroup;
+			children = (
+				5A0000000000000000000005 /* Subtext */,
+				5A000000000000000000002A /* SubtextWidgets */,
+				5A000000000000000000002B /* Shared */,
+				5A0000000000000000000031 /* Config */,
+				5A0000000000000000000003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		5A0000000000000000000031 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				5A0000000000000000000030 /* Base.xcconfig */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
+		5A0000000000000000000003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				5A0000000000000000000004 /* Subtext.app */,
+				5A0000000000000000000022 /* SubtextWidgetsExtension.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		5A0000000000000000000006 /* Subtext */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5A000000000000000000000B /* Build configuration list for PBXNativeTarget "Subtext" */;
+			buildPhases = (
+				5A0000000000000000000007 /* Sources */,
+				5A0000000000000000000008 /* Frameworks */,
+				5A0000000000000000000009 /* Resources */,
+				5A0000000000000000000020 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				5A0000000000000000000025 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				5A0000000000000000000005 /* Subtext */,
+				5A000000000000000000002B /* Shared */,
+			);
+			name = Subtext;
+			packageProductDependencies = (
+			);
+			productName = Subtext;
+			productReference = 5A0000000000000000000004 /* Subtext.app */;
+			productType = "com.apple.product-type.application";
+		};
+		5A0000000000000000000024 /* SubtextWidgetsExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5A0000000000000000000026 /* Build configuration list for PBXNativeTarget "SubtextWidgetsExtension" */;
+			buildPhases = (
+				5A0000000000000000000027 /* Sources */,
+				5A0000000000000000000028 /* Frameworks */,
+				5A0000000000000000000029 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				5A000000000000000000002A /* SubtextWidgets */,
+				5A000000000000000000002B /* Shared */,
+			);
+			name = SubtextWidgetsExtension;
+			packageProductDependencies = (
+			);
+			productName = SubtextWidgetsExtension;
+			productReference = 5A0000000000000000000022 /* SubtextWidgetsExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		5A0000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2700;
+				LastUpgradeCheck = 2700;
+				TargetAttributes = {
+					5A0000000000000000000006 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					5A0000000000000000000024 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+				};
+			};
+			buildConfigurationList = 5A000000000000000000000A /* Build configuration list for PBXProject "Subtext" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 5A0000000000000000000002;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 5A0000000000000000000003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				5A0000000000000000000006 /* Subtext */,
+				5A0000000000000000000024 /* SubtextWidgetsExtension */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		5A0000000000000000000009 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5A0000000000000000000029 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		5A0000000000000000000007 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5A0000000000000000000027 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		5A0000000000000000000025 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5A0000000000000000000024 /* SubtextWidgetsExtension */;
+			targetProxy = 5A0000000000000000000023 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		5A000000000000000000000C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		5A000000000000000000000D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		5A000000000000000000000E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5A0000000000000000000030 /* Base.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Config/Subtext-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Subtext;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.music";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.2;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_ID_PREFIX).subtext";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		5A000000000000000000000F /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5A0000000000000000000030 /* Base.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Config/Subtext-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Subtext;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.music";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.2;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_ID_PREFIX).subtext";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		5A000000000000000000002C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5A0000000000000000000030 /* Base.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Config/SubtextWidgets-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Subtext;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 0.2;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_ID_PREFIX).subtext.widgets";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		5A000000000000000000002D /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5A0000000000000000000030 /* Base.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Config/SubtextWidgets-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Subtext;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 0.2;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_ID_PREFIX).subtext.widgets";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		5A000000000000000000000A /* Build configuration list for PBXProject "Subtext" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5A000000000000000000000C /* Debug */,
+				5A000000000000000000000D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5A000000000000000000000B /* Build configuration list for PBXNativeTarget "Subtext" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5A000000000000000000000E /* Debug */,
+				5A000000000000000000000F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5A0000000000000000000026 /* Build configuration list for PBXNativeTarget "SubtextWidgetsExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5A000000000000000000002C /* Debug */,
+				5A000000000000000000002D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 5A0000000000000000000001 /* Project object */;
+}

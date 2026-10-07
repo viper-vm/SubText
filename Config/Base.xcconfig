@@ -1,0 +1,13 @@
+// Build settings shared by the app and its Lock Screen widget.
+// Put your own values in Config/Local.xcconfig (git ignores it). Start from Local.xcconfig.example.
+
+// From developer.spotify.com/dashboard. Not a secret: the app signs in with PKCE (no client secret).
+SPOTIFY_CLIENT_ID =
+
+// Your Apple developer team ID (Xcode → Settings → Accounts, or the team chosen under Signing & Capabilities).
+DEVELOPMENT_TEAM =
+
+// Must be unique to you, e.g. com.yourname. The app becomes <prefix>.subtext.
+BUNDLE_ID_PREFIX = io.github.vipervm
+
+#include? "Local.xcconfig"
