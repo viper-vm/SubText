@@ -4,6 +4,8 @@
 <dict>
 	<key>SpotifyClientID</key>
 	<string>$(SPOTIFY_CLIENT_ID)</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Subtext listens through the microphone to recognize songs playing around you, so it can show their lyrics.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>UIBackgroundModes</key>

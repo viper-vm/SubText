@@ -66,6 +66,8 @@ final class AppModel {
     private(set) var spotifyNow: SpotifyNowPlaying?
     private(set) var spotifyMessage: String?
     private(set) var isPlayingAlong = false
+    private(set) var isListening = false
+    private(set) var listenMessage: String?
     /// Drives `.translationTask` on the root view (Apple's translator only runs inside a view).
     var appleConfig: TranslationSession.Configuration?
     /// Asks the song screen to open a line's sheet (from the Ask button, a long press, or a test hook).
@@ -90,6 +92,11 @@ final class AppModel {
     @ObservationIgnored private let lockScreen = LockScreenLyrics()
     @ObservationIgnored private var isInBackground = false
     @ObservationIgnored private var idleSince: Date?
+    @ObservationIgnored private let listener = MusicListener()
+    @ObservationIgnored private var lastHeard: Date?
+    /// Apple's translator needs Subtext on screen to download a language; such songs wait until it opens.
+    @ObservationIgnored private var appleWaitingForScreen = false
+    @ObservationIgnored private var lastSpotifyProblem: String?
 
     private struct AppleJob {
         let key: String
@@ -98,18 +105,30 @@ final class AppModel {
         let source: DetectedLanguage
     }
 
+    init() {
+        ActivityLog.add("Subtext started")
+    }
+
     // MARK: - Lifecycle
 
     func becameActive() {
+        if isInBackground { ActivityLog.add("Subtext opened") }
         isInBackground = false
         startTicking()
         startPolling()
+        if appleWaitingForScreen {
+            appleWaitingForScreen = false
+            translateIfNeeded(force: false)
+        }
     }
 
     func wentBackground() {
         isInBackground = true
-        // While the Lock Screen card is moving, the silent audio keeps Subtext running, so keep going.
-        guard !lockScreen.keepsAppAwake else { return }
+        // While the Lock Screen card is moving (silent audio) or Subtext is listening (microphone),
+        // iOS keeps the app running, so keep going.
+        let awake = lockScreen.keepsAppAwake || isListening
+        ActivityLog.add(awake ? "In the background; keeping the Lock Screen card moving" : "In the background")
+        guard !awake else { return }
         pollTask?.cancel()
         pollTask = nil
         tickTask?.cancel()
@@ -132,13 +151,14 @@ final class AppModel {
 
     func disconnectSpotify() {
         spotify.disconnect()
-        lockScreen.stop()
+        lockScreen.stop(reason: "Spotify disconnected")
         pollTask?.cancel()
         pollTask = nil
         spotifyNow = nil
     }
 
     func followSpotify() {
+        if isListening { stopListening() }
         following = true
         isPlayingAlong = false
         if let now = spotifyNow {
@@ -150,7 +170,7 @@ final class AppModel {
 
     private func startPolling() {
         pollTask?.cancel()
-        guard spotify.isConnected else { return }
+        guard spotify.isConnected, !isListening else { return }
         pollTask = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self, self.spotify.isConnected else { return }
@@ -166,13 +186,17 @@ final class AppModel {
             let token = try await spotify.validToken()
             let now = try await SpotifyAPI.currentlyPlaying(token: token)
             spotifyMessage = nil
+            lastSpotifyProblem = nil
             spotifyNow = now
             guard let now else {
                 if following { clock.set(position: clock.position(), playing: false) }
                 return 5
             }
             if following {
-                if record?.id != now.track.key { show(track: now.track, source: .spotify) }
+                if record?.id != now.track.key {
+                    if isInBackground { ActivityLog.add("Next song on Spotify: \(now.track.title)") }
+                    show(track: now.track, source: .spotify)
+                }
                 syncClock(to: now)
             }
             // Ask again just after the song ends, so the next one shows up quickly.
@@ -189,7 +213,13 @@ final class AppModel {
         } catch SpotifyError.notConnected {
             return 30
         } catch {
-            if (error as? URLError)?.code != .cancelled { spotifyMessage = error.localizedDescription }
+            if (error as? URLError)?.code != .cancelled {
+                spotifyMessage = error.localizedDescription
+                if lastSpotifyProblem != spotifyMessage {
+                    lastSpotifyProblem = spotifyMessage
+                    ActivityLog.add("Couldn't check Spotify: \(error.localizedDescription)")
+                }
+            }
             return 8
         }
     }
@@ -206,6 +236,7 @@ final class AppModel {
     // MARK: - Choosing a song
 
     func pin(track: Track, source: SongSource, lyrics: Lyrics? = nil) {
+        if isListening { stopListening() }
         following = false
         isPlayingAlong = false
         show(track: track, source: source, preloaded: lyrics)
@@ -375,7 +406,7 @@ final class AppModel {
             if let apiKey = Prefs.claudeKey, Prefs.engine == .claude || !appleOK {
                 await self.runClaude(apiKey: apiKey, record: current, lines: lines, target: target)
             } else if appleOK, let language {
-                self.startApple(record: current, lines: lines, target: target, source: language)
+                await self.runApple(record: current, lines: lines, target: target, source: language)
             } else if let language, !language.appleCanTranslate {
                 self.translateState = .needsKey("This song is \(language.name) written in English letters, which Apple's translator can't read. Add a Claude API key in Settings to translate it.")
             } else if let language, language.confidence >= 0.6 {
@@ -422,6 +453,33 @@ final class AppModel {
         }
     }
 
+    private func runApple(record current: SongRecord, lines: [LyricLine], target: String, source: DetectedLanguage) async {
+        let job = AppleJob(key: current.id, lines: lines, target: target, source: source)
+        translateState = .working(done: 0, total: lines.count, engine: .apple)
+        // A language that's already downloaded can be translated without the screen (iOS 26+),
+        // so songs that start while the phone is locked get their translation on the Lock Screen too.
+        if #available(iOS 26.0, *) {
+            if await LanguageTools.appleInstalled(source.code, target: target) {
+                let session = TranslationSession(installedSource: Locale.Language(identifier: source.code),
+                                                 target: Locale.Language(identifier: target))
+                do {
+                    try await applyAppleTranslation(session: session, job: job)
+                    return
+                } catch {
+                    ActivityLog.add("Apple's translator didn't work in the background: \(error.localizedDescription)")
+                }
+            }
+        }
+        // Otherwise Apple's translator runs inside the screen, where it can ask to download the language.
+        if isInBackground {
+            appleWaitingForScreen = true
+            if record?.id == current.id { translateState = .idle }
+            ActivityLog.add("Translation of \(current.track.title) waits until Subtext is opened")
+            return
+        }
+        startApple(record: current, lines: lines, target: target, source: source)
+    }
+
     private func startApple(record current: SongRecord, lines: [LyricLine], target: String, source: DetectedLanguage) {
         appleJob = AppleJob(key: current.id, lines: lines, target: target, source: source)
         translateState = .working(done: 0, total: lines.count, engine: .apple)
@@ -439,27 +497,35 @@ final class AppModel {
     func runAppleTranslation(_ session: TranslationSession) async {
         guard let job = appleJob else { return }
         appleJob = nil
-        let requests = job.lines.map { TranslationSession.Request(sourceText: $0.text, clientIdentifier: String($0.id)) }
         do {
-            let responses = try await session.translations(from: requests)
-            var translation = SongTranslation(targetLanguage: job.target, engine: .apple, model: nil,
-                                              sourceLanguageName: job.source.name, sourceLanguageCode: job.source.code)
-            let roman = record?.id == job.key ? localRoman : [:]
-            for response in responses {
-                guard let id = response.clientIdentifier.flatMap({ Int($0) }) else { continue }
-                let unchanged = response.targetText.trimmingCharacters(in: .whitespaces)
-                    .caseInsensitiveCompare(response.sourceText.trimmingCharacters(in: .whitespaces)) == .orderedSame
-                translation.glosses[id] = LineGloss(translation: unchanged ? "" : response.targetText,
-                                                    romanization: roman[id], note: nil)
-            }
-            translation.complete = true
-            setTranslation(translation, for: job.key, persist: true)
-            if record?.id == job.key { translateState = .done }
+            try await applyAppleTranslation(session: session, job: job)
         } catch {
-            if record?.id == job.key {
+            if isInBackground {
+                // Try again when Subtext is on screen instead of showing an error.
+                appleWaitingForScreen = true
+                if record?.id == job.key { translateState = .idle }
+            } else if record?.id == job.key {
                 translateState = .failed("Apple's translator couldn't do this song: \(error.localizedDescription)")
             }
         }
+    }
+
+    private func applyAppleTranslation(session: TranslationSession, job: AppleJob) async throws {
+        let requests = job.lines.map { TranslationSession.Request(sourceText: $0.text, clientIdentifier: String($0.id)) }
+        let responses = try await session.translations(from: requests)
+        var translation = SongTranslation(targetLanguage: job.target, engine: .apple, model: nil,
+                                          sourceLanguageName: job.source.name, sourceLanguageCode: job.source.code)
+        let roman = record?.id == job.key ? localRoman : [:]
+        for response in responses {
+            guard let id = response.clientIdentifier.flatMap({ Int($0) }) else { continue }
+            let unchanged = response.targetText.trimmingCharacters(in: .whitespaces)
+                .caseInsensitiveCompare(response.sourceText.trimmingCharacters(in: .whitespaces)) == .orderedSame
+            translation.glosses[id] = LineGloss(translation: unchanged ? "" : response.targetText,
+                                                romanization: roman[id], note: nil)
+        }
+        translation.complete = true
+        setTranslation(translation, for: job.key, persist: true)
+        if record?.id == job.key { translateState = .done }
     }
 
     private func setTranslation(_ translation: SongTranslation, for key: String, persist: Bool = false) {
@@ -502,6 +568,64 @@ final class AppModel {
         }
     }
 
+    // MARK: - Listening to music around you
+
+    func startListening() async {
+        guard !isListening else { return }
+        listenMessage = nil
+        do {
+            try await listener.start(
+                onHeard: { [weak self] heard in self?.heard(heard) },
+                onNothing: { [weak self] in self?.heardNothing() },
+                onError: { [weak self] error in self?.listeningFailed(error) })
+        } catch {
+            listenMessage = error.localizedDescription
+            return
+        }
+        isListening = true
+        following = false
+        isPlayingAlong = false
+        lastHeard = nil
+        pollTask?.cancel()
+        pollTask = nil
+        selectedTab = .now
+        ActivityLog.add("Listening started")
+    }
+
+    func stopListening() {
+        guard isListening else { return }
+        listener.stop()
+        isListening = false
+        if source == .listening { clock.set(position: clock.position(), playing: false) }
+        ActivityLog.add("Listening stopped")
+    }
+
+    private func heard(_ heard: MusicListener.Heard) {
+        lastHeard = heard.date
+        listenMessage = nil
+        if record?.id != heard.track.key {
+            ActivityLog.add("Heard \(heard.track.title)")
+            show(track: heard.track, source: .listening)
+        }
+        // Shazam says where in the song the music is; ignore tiny differences so the highlight stays steady.
+        if clock.active, clock.playing, abs(clock.position(at: heard.date) - heard.offset) < 0.5 { return }
+        clock.set(position: heard.offset, at: heard.date, playing: true)
+        tick()
+    }
+
+    private func heardNothing() {
+        // Half a minute without a match means the music has probably stopped.
+        if let lastHeard, Date().timeIntervalSince(lastHeard) > 30, clock.playing {
+            clock.set(position: clock.position(), playing: false)
+        }
+    }
+
+    private func listeningFailed(_ error: Error) {
+        listenMessage = error.localizedDescription
+        ActivityLog.add("Listening problem: \(error.localizedDescription)")
+        if let listenError = error as? ListenError, case .shazamNotEnabled = listenError { stopListening() }
+    }
+
     // MARK: - Line highlight
 
     func startPlayAlong(from line: LyricLine?) {
@@ -542,32 +666,44 @@ final class AppModel {
 
     /// Builds the Lock Screen card from what's on screen. Called every tick; unchanged cards aren't re-sent.
     private func refreshLockScreen() {
-        guard LockScreenLyrics.isEnabled, let record else {
-            lockScreen.stop()
+        guard LockScreenLyrics.isEnabled else {
+            lockScreen.stop(reason: "turned off in Settings")
             return
         }
-        let live = following && spotify.isConnected
-        guard live || isPlayingAlong else {
-            lockScreen.stop()
+        guard let record else {
+            lockScreen.stop(reason: "no song")
             return
         }
-        let playing = live ? (spotifyNow?.isPlaying == true && spotifyNow?.track.key == record.id) : clock.playing
+        let followingSpotify = following && spotify.isConnected
+        guard followingSpotify || isListening || isPlayingAlong else {
+            lockScreen.stop(reason: "not following any music")
+            return
+        }
+        let playing: Bool
+        if isListening {
+            playing = source == .listening && clock.playing
+        } else if followingSpotify {
+            playing = spotifyNow?.isPlaying == true && spotifyNow?.track.key == record.id
+        } else {
+            playing = clock.playing
+        }
 
         // After two minutes without music, let iOS suspend Subtext to save battery.
+        // (While listening, the microphone keeps Subtext running anyway.)
         if playing {
             idleSince = nil
         } else if idleSince == nil {
             idleSince = Date()
         }
-        if let idleSince, Date().timeIntervalSince(idleSince) > 120 {
-            lockScreen.stop()
+        if !isListening, let idleSince, Date().timeIntervalSince(idleSince) > 120 {
+            lockScreen.stop(reason: "no music for two minutes")
             return
         }
 
         var state = LockScreenLyrics.State(title: record.track.title, artist: record.track.artist, line: "♪",
                                            romanization: nil, translation: nil, songStart: nil, songEnd: nil,
                                            isPlaying: playing, status: nil)
-        if playing, let start = clock.songStart, let duration = record.track.duration {
+        if playing, let start = clock.songStart, let duration = record.track.duration ?? record.lyrics?.duration {
             state.songStart = start
             state.songEnd = start.addingTimeInterval(duration)
         }
@@ -593,7 +729,8 @@ final class AppModel {
                 }
             }
         }
-        lockScreen.show(state, keepAwake: true)
+        // While listening, the microphone keeps Subtext running and the silent audio would get in its way.
+        lockScreen.show(state, keepAwake: !isListening)
     }
 
     #if DEBUG

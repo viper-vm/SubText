@@ -18,6 +18,7 @@ struct SettingsView: View {
     @State private var keyDraft = ""
     @State private var keyHint = Prefs.claudeKeyHint
     @State private var confirmClear = false
+    @State private var confirmDisconnect = false
 
     var body: some View {
         NavigationStack {
@@ -27,6 +28,7 @@ struct SettingsView: View {
                 claudeSection
                 displaySection
                 lockScreenSection
+                listeningSection
                 Section {
                     NavigationLink("Set up the Shazam shortcut") { ShortcutHelpView() }
                 } header: {
@@ -57,10 +59,29 @@ struct SettingsView: View {
     private var spotifySection: some View {
         Section {
             if model.spotify.isConnected {
-                LabeledContent("Status") {
-                    Label("Connected", systemImage: "checkmark.circle.fill").foregroundStyle(Color.spotifyGreen)
+                HStack(spacing: 12) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(Color.spotifyGreen)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(model.spotify.accountName.map { "Connected as \($0)" } ?? "Connected to Spotify")
+                            .font(.body.weight(.semibold))
+                        Text(nowPlaying)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
                 }
-                Button("Disconnect Spotify", role: .destructive) { model.disconnectSpotify() }
+                .padding(.vertical, 2)
+                if let message = model.spotifyMessage {
+                    Text(message).font(.footnote).foregroundStyle(.orange)
+                }
+                Button("Disconnect Spotify", role: .destructive) { confirmDisconnect = true }
+                    .confirmationDialog("Disconnect Spotify?", isPresented: $confirmDisconnect, titleVisibility: .visible) {
+                        Button("Disconnect", role: .destructive) { model.disconnectSpotify() }
+                    } message: {
+                        Text("Subtext stops following what you play until you connect again.")
+                    }
             } else {
                 Button {
                     Task { await model.connectSpotify(using: webAuthenticationSession) }
@@ -68,22 +89,33 @@ struct SettingsView: View {
                     Label("Connect Spotify", systemImage: "link")
                 }
                 .disabled(Prefs.spotifyClientID.isEmpty && clientID.isEmpty)
+                if let message = model.spotifyMessage {
+                    Text(message).font(.footnote).foregroundStyle(.red)
+                }
             }
-            if let message = model.spotifyMessage {
-                Text(message).font(.footnote).foregroundStyle(.red)
-            }
-            DisclosureGroup("Spotify app details") {
-                TextField("Client ID", text: $clientID)
-                    .font(.footnote.monospaced())
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                LabeledContent("Redirect URI", value: Config.spotifyRedirectURI)
-                    .font(.footnote)
-            }
+            NavigationLink("Spotify app details") { SpotifyAppDetailsView(clientID: $clientID) }
         } header: {
             Text("Spotify")
         } footer: {
             Text("Subtext reads what Spotify is playing, so the lyrics follow the song even on earphones. Spotify requires Premium for this.")
+        }
+        .task { await model.spotify.loadAccountName() }
+    }
+
+    private var nowPlaying: String {
+        guard let now = model.spotifyNow else { return "Nothing playing right now" }
+        let song = now.track.artist.isEmpty ? now.track.title : "\(now.track.title) · \(now.track.artist)"
+        return (now.isPlaying ? "Playing " : "Paused: ") + song
+    }
+
+    private var listeningSection: some View {
+        Section {
+            Label("Tap Listen on the Now tab to recognize music playing around you.", systemImage: "waveform")
+                .font(.subheadline)
+        } header: {
+            Text("Music around you")
+        } footer: {
+            Text("Listening uses Apple's ShazamKit, which only works with the paid Apple Developer Program ($99 a year). The microphone stays on while listening, which uses more battery.")
         }
     }
 
@@ -139,6 +171,7 @@ struct SettingsView: View {
     private var lockScreenSection: some View {
         Section {
             Toggle("Lyrics on the Lock Screen", isOn: $lockScreen)
+            NavigationLink("Background log") { BackgroundLogView() }
             if lockScreen && !LockScreenLyrics.systemAllows {
                 Text("Live Activities are off for Subtext. Turn them on in the iPhone's Settings app → Subtext.")
                     .font(.footnote)
@@ -163,6 +196,69 @@ struct SettingsView: View {
             Text("Show")
         } footer: {
             Text("If the highlight runs behind the singing, raise the timing; if it runs ahead, lower it.")
+        }
+    }
+}
+
+struct SpotifyAppDetailsView: View {
+    @Binding var clientID: String
+
+    var body: some View {
+        Form {
+            Section {
+                TextField("Client ID", text: $clientID)
+                    .font(.body.monospaced())
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+            } header: {
+                Text("Client ID")
+            } footer: {
+                Text("From your app at developer.spotify.com/dashboard. It's usually set in Config/Local.xcconfig before building; anything typed here is used instead.")
+            }
+            Section {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Redirect URI").font(.subheadline)
+                    Text(Config.spotifyRedirectURI)
+                        .font(.body.monospaced())
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                }
+                .padding(.vertical, 2)
+                Link("Open the Spotify dashboard", destination: URL(string: "https://developer.spotify.com/dashboard")!)
+            } footer: {
+                Text("The dashboard must list this redirect URI, and your Spotify account must be added under User Management.")
+            }
+        }
+        .navigationTitle("Spotify app")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+struct BackgroundLogView: View {
+    @State private var log = ActivityLog.text
+
+    var body: some View {
+        ScrollView {
+            Text(log.isEmpty ? "Nothing logged yet." : log)
+                .font(.caption.monospaced())
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+        }
+        .navigationTitle("Background log")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                ShareLink(item: log) { Label("Share", systemImage: "square.and.arrow.up") }
+                    .disabled(log.isEmpty)
+            }
+            ToolbarItem(placement: .bottomBar) {
+                Button("Clear log", role: .destructive) {
+                    ActivityLog.clear()
+                    log = ""
+                }
+                .disabled(log.isEmpty)
+            }
         }
     }
 }

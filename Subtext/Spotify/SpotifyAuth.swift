@@ -56,6 +56,8 @@ final class SpotifyAuth {
     private static let refreshAccount = "spotify.refreshToken"
 
     private(set) var isConnected: Bool
+    /// The Spotify profile name, shown in Settings.
+    private(set) var accountName: String?
     @ObservationIgnored private var accessToken: String?
     @ObservationIgnored private var expiresAt = Date.distantPast
 
@@ -111,6 +113,17 @@ final class SpotifyAuth {
         return token
     }
 
+    func loadAccountName() async {
+        guard isConnected, accountName == nil, let token = try? await validToken() else { return }
+        var request = URLRequest(url: URL(string: "https://api.spotify.com/v1/me")!)
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        guard let result = try? await URLSession.shared.data(for: request),
+              (result.1 as? HTTPURLResponse)?.statusCode == 200,
+              let profile = try? JSONSerialization.jsonObject(with: result.0) as? [String: Any] else { return }
+        let name = (profile["display_name"] as? String)?.trimmingCharacters(in: .whitespaces) ?? ""
+        accountName = name.isEmpty ? profile["id"] as? String : name
+    }
+
     func invalidateAccessToken() {
         accessToken = nil
         expiresAt = .distantPast
@@ -120,6 +133,7 @@ final class SpotifyAuth {
         Keychain.delete(Self.refreshAccount)
         invalidateAccessToken()
         isConnected = false
+        accountName = nil
     }
 
     private struct TokenResponse: Decodable {

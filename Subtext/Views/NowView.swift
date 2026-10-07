@@ -28,6 +28,17 @@ struct NowView: View {
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        Task {
+                            if model.isListening { model.stopListening() } else { await model.startListening() }
+                        }
+                    } label: {
+                        Label(model.isListening ? "Stop listening" : "Listen",
+                              systemImage: model.isListening ? "waveform.circle.fill" : "waveform")
+                    }
+                    .tint(model.isListening ? Color.accentColor : nil)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
                     Button { showSearch = true } label: { Label("Search", systemImage: "magnifyingglass") }
                 }
                 if model.record != nil {
@@ -184,6 +195,7 @@ struct SongHeader: View {
             Chip(text: paused ? "Paused on Spotify" : "Spotify", systemImage: "dot.radiowaves.left.and.right", tint: .spotifyGreen)
         } else {
             switch model.source {
+            case .listening: Chip(text: model.isListening ? "Listening" : "Heard nearby", systemImage: "waveform", tint: .accentColor)
             case .shortcut: Chip(text: "Shazam", systemImage: "shazam.logo")
             case .history: Chip(text: "History", systemImage: "clock")
             case .pasted: Chip(text: "Pasted", systemImage: "doc.on.clipboard")
@@ -207,6 +219,16 @@ struct StatusBanner: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
+            if let message = model.listenMessage {
+                Card {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(message).font(.footnote)
+                        if model.isListening {
+                            Button("Stop listening") { model.stopListening() }.buttonStyle(.bordered)
+                        }
+                    }
+                }
+            }
             lyricsStatus
             translationStatus
             if model.lyricsState == .loaded, let lyrics = model.record?.lyrics, !lyrics.synced, !lyrics.instrumental {
@@ -428,9 +450,28 @@ struct EmptyNowView: View {
                     Label("Search for a song", systemImage: "magnifyingglass").frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
+                Button {
+                    Task {
+                        if model.isListening { model.stopListening() } else { await model.startListening() }
+                    }
+                } label: {
+                    Label(model.isListening ? "Stop listening" : "Listen to music around me",
+                          systemImage: model.isListening ? "stop.circle" : "waveform")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
             }
             .controlSize(.large)
             .padding(.top, 8)
+            if model.isListening {
+                HStack(spacing: 8) {
+                    ProgressView()
+                    Text("Listening for music…").font(.subheadline).foregroundStyle(.secondary)
+                }
+            }
+            if let message = model.listenMessage {
+                Text(message).font(.footnote).foregroundStyle(.red).multilineTextAlignment(.center)
+            }
             if let message = model.spotifyMessage {
                 Text(message).font(.footnote).foregroundStyle(.red).multilineTextAlignment(.center)
             }

@@ -52,6 +52,12 @@ enum LanguageTools {
 
     static func sameLanguage(_ a: String, _ b: String) -> Bool { baseCode(a) == baseCode(b) }
 
+    /// Whether the language pair is already downloaded, so translating needs no prompt.
+    static func appleInstalled(_ source: String, target: String) async -> Bool {
+        await LanguageAvailability().status(from: Locale.Language(identifier: source),
+                                            to: Locale.Language(identifier: target)) == .installed
+    }
+
     /// Whether Apple's on-device translator can do this language pair (it may still need a download).
     static func appleSupports(_ source: String, target: String) async -> Bool {
         let status = await LanguageAvailability().status(from: Locale.Language(identifier: source),

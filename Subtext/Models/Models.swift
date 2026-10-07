@@ -2,7 +2,7 @@ import Foundation
 
 /// Where the song on screen came from.
 enum SongSource: String, Codable {
-    case spotify, search, shortcut, history, pasted
+    case spotify, search, shortcut, history, pasted, listening
 }
 
 struct Track: Codable, Hashable {
@@ -73,6 +73,8 @@ struct Lyrics: Codable, Hashable {
     var synced: Bool
     var lrclibID: Int?
     var instrumental: Bool = false
+    /// Length of the recording the lyrics were timed to, when known.
+    var duration: TimeInterval?
 
     var wordLines: [LyricLine] { lines.filter { !$0.isBreak } }
 }

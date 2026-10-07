@@ -15,13 +15,13 @@ struct LRCLibRecord: Decodable, Identifiable, Hashable {
     var hasAny: Bool { hasSynced || !(plainLyrics ?? "").isEmpty || instrumental == true }
 
     func lyrics() -> Lyrics? {
-        if instrumental == true { return Lyrics(lines: [], synced: false, lrclibID: id, instrumental: true) }
+        if instrumental == true { return Lyrics(lines: [], synced: false, lrclibID: id, instrumental: true, duration: duration) }
         if let synced = syncedLyrics, !synced.isEmpty {
             let lines = LRCParser.parse(synced: synced)
-            if !lines.isEmpty { return Lyrics(lines: lines, synced: true, lrclibID: id) }
+            if !lines.isEmpty { return Lyrics(lines: lines, synced: true, lrclibID: id, duration: duration) }
         }
         if let plain = plainLyrics, !plain.isEmpty {
-            return Lyrics(lines: LRCParser.parse(plain: plain), synced: false, lrclibID: id)
+            return Lyrics(lines: LRCParser.parse(plain: plain), synced: false, lrclibID: id, duration: duration)
         }
         return nil
     }

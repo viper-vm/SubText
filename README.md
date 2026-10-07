@@ -4,6 +4,8 @@
 
 On your phone the app is called **Subtext**.
 
+> I made this app because I like to learn and understand new languages from songs. 🙂
+
 <p>
   <img src="docs/images/start.png" width="260" alt="Start screen with Connect Spotify and Search buttons">
   &nbsp;&nbsp;
@@ -19,6 +21,7 @@ On your phone the app is called **Subtext**.
 - **Ask about any line.** Ask Claude what a word means, why it's said that way, or what it refers to, then ask follow-ups. Answers are saved with the song.
 - **Lyrics on the Lock Screen.** A Live Activity shows the line being sung and its translation, and updates as the song plays.
 - **Songs outside Spotify.** A Shazam shortcut opens any song playing nearby in SubText.
+- **Always-on listening.** SubText can keep listening to music playing around you, recognize each song, and keep its lyrics in time. This uses Apple's ShazamKit and needs the paid Apple Developer Program.
 - **Search and paste.** Find any song by name, or paste lyrics the database doesn't have. Timed LRC lyrics work too.
 - **History.** Every song you've read is saved with its translation, so opening it again costs nothing.
 
@@ -42,7 +45,8 @@ Apple Translation / Claude ─► translations ────┘          └─�
 | An iPhone on **iOS 18 or later** | Tested on an iPhone 13 Pro running iOS 26.6. |
 | An **Apple ID** | A free one works, but the app must be reinstalled every 7 days. The paid Apple Developer Program ($99 a year) makes installs last a year. |
 | **Spotify Premium** | Since February 2026, Spotify requires the owner of a developer app to have Premium. |
-| An **Anthropic API key** (optional) | For Claude translations. Get one at [console.anthropic.com](https://console.anthropic.com). |
+| An **Anthropic API key** (optional) | For Claude translations and questions. Get one at [console.anthropic.com](https://console.anthropic.com). |
+| The **Apple Developer Program** (optional) | Only for listening to music around you, because Apple's ShazamKit requires it. It also makes installs last a year. |
 
 ## Setup
 
@@ -171,7 +175,25 @@ This is on by default; the switch is Settings → **Lyrics on the Lock Screen**.
 - It stops after **two minutes without music**, or if you **swipe SubText away** in the app switcher. Open SubText to start it again.
 - If you swipe the card off the Lock Screen, it stays hidden until the next song.
 - If the card says "Open Subtext to keep the lyrics moving", iOS has stopped the app. Open it again.
+- If iOS asks "Do you want to continue to allow Live Activities from Subtext?", tap **Always Allow**. **Don't Allow** turns the card off.
+- When the next song starts while the phone is locked, its lyrics appear on the card. If its language is already downloaded for Apple's translator (iOS 26 or later), the translation appears too. Otherwise the translation shows up next time you open SubText.
+- If the card ever stops, open Settings → **Background log**. It shows what SubText and iOS did, step by step. Use the share button to send it along with a bug report.
 - Live Activities must be allowed for Subtext. Check this in the iPhone's Settings app → **Subtext**.
+
+### Listen to music around you
+
+Tap **Listen** at the top of the Now screen, or **Listen to music around me** on the start screen. SubText listens through the microphone, recognizes each song, and shows its lyrics in time with the music. When the song changes, it moves on by itself, and the Lock Screen card follows along. Tap the button again to stop.
+
+- It works for music playing out loud nearby: a speaker, the radio, a café. For music on this iPhone, connect Spotify instead, because the microphone can't hear your earphones.
+- The microphone stays on while listening (iOS shows the orange dot), which uses more battery.
+- This needs **Apple's ShazamKit**, which only works for apps signed with the paid Apple Developer Program. With a free Apple ID, Listen shows a message saying so.
+
+**Switching it on with a paid membership:**
+
+1. Join the [Apple Developer Program](https://developer.apple.com/programs/) and sign in with that account in Xcode → Settings → Accounts.
+2. Put the paid team's ID in `DEVELOPMENT_TEAM` in `Config/Local.xcconfig`, then run `./install-on-iphone.sh` once. This registers the app with the paid team. If Xcode says the bundle identifier isn't available, change `BUNDLE_ID_PREFIX` and run it again.
+3. At [developer.apple.com/account](https://developer.apple.com/account), go to Certificates, Identifiers & Profiles → **Identifiers**. Open your app's identifier (`<prefix>.subtext`), open **App Services**, tick **ShazamKit** and save.
+4. Run `./install-on-iphone.sh` again.
 
 ### Songs outside Spotify (Shazam shortcut)
 
@@ -193,6 +215,7 @@ Shazam listens through the microphone, so it works best when music plays out lou
 - **Spotify:** SubText asks Spotify only what's playing. It uses the `user-read-currently-playing` and `user-read-playback-state` permissions. Sign-in uses PKCE, and the sign-in token is kept in the iPhone's keychain.
 - **LRCLIB:** receives the song's title, artist, album and length to find its lyrics.
 - **Apple's translator:** runs on the phone and sends nothing.
+- **Microphone (only while listening):** ShazamKit turns the sound into a signature, a summary of the audio, and sends it to Apple's Shazam service to find the song. The recording isn't kept.
 - **Claude (only if you add a key):** the song's title, artist and lyric lines are sent to Anthropic's API. When you ask about a line, Anthropic receives that line, the three lines either side of it, the song's summary and your question.
 - **Everything else stays on the phone:** saved songs, translations and settings. There are no analytics and no SubText server.
 
@@ -201,6 +224,7 @@ Shazam listens through the microphone, so it works best when music plays out lou
 - SubText follows Spotify rather than listening to it, because iOS doesn't let apps hear each other. Other apps work through the Shazam shortcut.
 - Lyrics come from LRCLIB. Some songs are missing or have no timing, especially new or regional releases. You can paste lyrics for those.
 - With a free Apple ID you must reinstall every 7 days.
+- Listening to music around you needs the paid Apple Developer Program. It also can't hear music playing in your earphones.
 - Lock Screen lyrics depend on the app staying in the background. If iOS ends it (low memory, or you force-quit it), the card stops until you open SubText.
 - A Spotify app in development mode allows up to 5 users. Each one must be added under User Management.
 
@@ -218,14 +242,18 @@ Shazam listens through the microphone, so it works best when music plays out lou
 | Spotify says "Spotify refused (403)…" | Add your Spotify account under User Management. The app's owner needs Premium. |
 | The app won't open after about a week | Free signing has expired. Run the install script again. |
 | "No lyrics found" | Search with a different spelling, or paste the lyrics. |
-| The Lock Screen card stops moving | Open SubText. Check that Settings → Lyrics on the Lock Screen is on and that Live Activities are allowed. |
+| The Lock Screen card stops moving | Open SubText. Check that Settings → Lyrics on the Lock Screen is on and that Live Activities are allowed. Settings → **Background log** shows why it stopped. |
+| iOS asks whether to keep allowing Live Activities | Tap **Always Allow**. |
+| Listen says it needs the Apple Developer Program | ShazamKit isn't switched on for the app. Follow "Switching it on with a paid membership" above. |
+| Listen says it can't use the microphone | Allow the microphone in the iPhone's Settings app → Subtext. |
 
 ## Development
 
 ```
 Subtext/            the app
   App/              app entry, AppModel (song on screen, Spotify polling, line clock, translation),
-                    Lock Screen controller, background audio
+                    Lock Screen controller, background audio, background log
+  Listen/           always-on listening with ShazamKit
   Lyrics/           LRCLIB client, LRC parser
   Spotify/          PKCE sign-in, currently-playing API
   Translate/        Claude API client, streaming translator, "ask about a line", language detection,
